@@ -121,6 +121,46 @@ header p {
     color: var(--text-muted);
 }
 
+/* Checkbox Group */
+.checkbox-group {
+    justify-content: center;
+    flex: 0 1 auto;
+    min-width: auto;
+}
+
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: var(--background);
+    border: 1px solid var(--border);
+    transition: all 0.3s ease;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: normal;
+    color: var(--text);
+    margin-top: 0;
+}
+
+.checkbox-group label:hover {
+    border-color: var(--primary-color);
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.checkbox-group input[type="checkbox"] {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-color);
+}
+
+.checkbox-group input[type="checkbox"]:checked {
+    accent-color: var(--success);
+}
+
 /* Category Buttons */
 .category-buttons {
     display: flex;

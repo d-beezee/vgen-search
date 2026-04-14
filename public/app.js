@@ -48,33 +48,94 @@ function filterByCategory(categoryId) {
     handleSearch();
 }
 
+// Estrai i filtri di prezzo dalla UI
+function getPriceFilters() {
+    return {
+        minPrice: parseInt(document.getElementById('minPrice')?.value || 0) * 100,
+        maxPrice: parseInt(document.getElementById('maxPrice')?.value || 999999) * 100
+    };
+}
+
+// Estrai il tipo di ordinamento dalla UI
+function getSortType() {
+    return document.getElementById('sortType').value;
+}
+
+// Verifica se il filtro "on sale" è attivo
+function isOnSaleActive() {
+    return document.getElementById('onSaleCheckbox')?.checked || false;
+}
+
+// Aggiorna la serviceQuery con il filtro onSale
+function updateServiceQuery() {
+    const baseQuery = serviceQuery;
+    const onSaleActive = isOnSaleActive();
+    
+    // Se on sale è attivo, aggiungi onSale: true alla query
+    if (onSaleActive) {
+        serviceQuery = {
+            ...baseQuery,
+            onSale: true
+        };
+    } else {
+        // Altrimenti rimuovi onSale
+        const { onSale, ...queryWithoutOnSale } = baseQuery;
+        serviceQuery = queryWithoutOnSale;
+    }
+}
+
+// Costruisci il body della richiesta API
+function buildSearchRequest(sortType, cursor = null) {
+    const requestBody = {
+        filters: {
+            artist: {},
+            service: serviceQuery
+        },
+        sortType: sortType
+    };
+    
+    if (cursor) {
+        requestBody.cursor = cursor;
+    }
+    
+    return requestBody;
+}
+
+// Filtra i risultati per intervallo di prezzo
+function filterByPriceRange(services, minPrice, maxPrice) {
+    return services.filter(service => {
+        const price = service.basePrice || 0;
+        return price >= minPrice && price <= maxPrice;
+    });
+}
+
+// Effettua la richiesta di ricerca all'API
+async function performSearch(requestBody) {
+    const response = await fetch('/api/search', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+    });
+
+    return await response.json();
+}
+
 // Gestione della ricerca
 async function handleSearch() {
-    const sortType = document.getElementById('sortType').value;
-    const minPrice = parseInt(document.getElementById('minPrice')?.value || 0) * 100; // Converti a centesimi
-    const maxPrice = parseInt(document.getElementById('maxPrice')?.value || 999999) * 100;
+    // Aggiorna la serviceQuery con il filtro onSale
+    updateServiceQuery();
+    
+    const sortType = getSortType();
+    const { minPrice, maxPrice } = getPriceFilters();
     
     showLoading();
     hideError();
 
     try {
-        const requestBody = {
-            filters: {
-                artist: {},
-                service: serviceQuery
-            },
-            sortType: sortType
-        };
-        
-        const response = await fetch('/api/search', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestBody)
-        });
-
-        const data = await response.json();
+        const requestBody = buildSearchRequest(sortType);
+        const data = await performSearch(requestBody);
         hideLoading();
 
         if (!data.success) {
@@ -83,10 +144,7 @@ async function handleSearch() {
         }
 
         // Filtra i risultati per prezzo lato client
-        const filteredResults = data.data.filter(service => {
-            const price = service.basePrice || 0;
-            return price >= minPrice && price <= maxPrice;
-        });
+        const filteredResults = filterByPriceRange(data.data, minPrice, maxPrice);
 
         displayResults(filteredResults);
         
@@ -98,12 +156,6 @@ async function handleSearch() {
             minPrice: minPrice,
             maxPrice: maxPrice
         };
-        
-        if (data.nextCursor) {
-            // infinite scroll attivo
-        } else {
-            // Nessun altro risultato disponibile
-        }
     } catch (error) {
         hideLoading();
         showError('Errore di connessione: ' + error.message);
@@ -357,21 +409,13 @@ async function loadMoreAuto() {
 
     try {
         // Usa la ricerca precedente con il nuovo cursor
-        const requestBody = {
-            cursor: currentSearchState.lastCursor,
-            filters: currentSearchState.filters,
-            sortType: currentSearchState.sortType
-        };
+        const requestBody = buildSearchRequest(
+            currentSearchState.sortType,
+            currentSearchState.lastCursor
+        );
+        requestBody.filters = currentSearchState.filters;
 
-        const response = await fetch('/api/search', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestBody)
-        });
-
-        const data = await response.json();
+        const data = await performSearch(requestBody);
 
         if (!data.success) {
             isLoadingMore = false;
@@ -381,12 +425,11 @@ async function loadMoreAuto() {
         // Se ci sono nuovi risultati, aggiungili
         if (data.data && data.data.length > 0) {
             // Applica il filtro prezzo anche ai nuovi risultati
-            const filteredResults = data.data.filter(service => {
-                const price = service.basePrice || 0;
-                const minPrice = currentSearchState.minPrice || 0;
-                const maxPrice = currentSearchState.maxPrice || 999999 * 100;
-                return price >= minPrice && price <= maxPrice;
-            });
+            const filteredResults = filterByPriceRange(
+                data.data,
+                currentSearchState.minPrice || 0,
+                currentSearchState.maxPrice || 999999 * 100
+            );
             
             appendResults(filteredResults);
             

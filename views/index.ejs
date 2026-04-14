@@ -43,6 +43,13 @@
                     <input type="number" id="maxPrice" min="0" step="10" value="10000" placeholder="Max" onchange="handleSearch()">
                 </div>
                 
+                <div class="search-group checkbox-group">
+                    <label for="onSaleCheckbox">
+                        <input type="checkbox" id="onSaleCheckbox" onchange="handleSearch()">
+                        <span>In offerta</span>
+                    </label>
+                </div>
+                
                 <button class="btn-primary" onclick="handleSearch()">🔍 Cerca</button>
             </div>
         </section>
