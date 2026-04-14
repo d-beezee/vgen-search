@@ -13,8 +13,15 @@
             <p>Cerca artisti disponibili per commissioni</p>
         </header>
 
+        <section class="search-bar-section">
+            <div class="search-bar-container">
+                <input type="text" id="searchInput" class="search-bar-input" placeholder="🔍 Cerca servizi, artisti, stili..." onkeypress="if(event.key === 'Enter') handleSearch()" onchange="handleSearch()">
+            </div>
+        </section>
+
         <section class="search-section">
             <div class="search-controls">
+
                 <div class="search-group">
                     <label>Categoria:</label>
                     <div class="category-buttons">

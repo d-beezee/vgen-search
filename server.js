@@ -129,7 +129,7 @@ app.get('/', (req, res) => {
 // API per cercare i servizi
 app.post('/api/search', async (req, res) => {
   try {
-    const { cursor, filters, sortType } = req.body;
+    const { cursor, filters, sortType ,textQuery} = req.body;
 
     // Aggiorna lo stato con i filtri della ricerca
     if (filters) currentFilters = filters;
@@ -137,8 +137,9 @@ app.post('/api/search', async (req, res) => {
     if (cursor) currentCursor = cursor;
 
     const requestBody = {
-      cursor: cursor || currentCursor || '64db6cac9a8f97583545f0c2__0.850289736890733',
+      cursor: cursor || currentCursor ,
       filters: filters || currentFilters,
+      textQuery: textQuery && textQuery.trim() !== '' ? textQuery.trim() : undefined,
       sortType: sortType || currentSort
     };
 

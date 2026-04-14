@@ -109,6 +109,11 @@ function getSortType() {
     return document.getElementById('sortType').value;
 }
 
+// Estrai il testo di ricerca dalla UI
+function getSearchText() {
+    return document.getElementById('searchInput')?.value?.trim() || '';
+}
+
 // Verifica se il filtro "on sale" è attivo
 function isOnSaleActive() {
     return document.getElementById('onSaleCheckbox')?.checked || false;
@@ -134,6 +139,7 @@ function updateServiceQuery() {
 
 // Costruisci il body della richiesta API
 function buildSearchRequest(sortType, cursor = null) {
+    const searchText = getSearchText();
     const requestBody = {
         filters: {
             artist: {},
@@ -141,6 +147,11 @@ function buildSearchRequest(sortType, cursor = null) {
         },
         sortType: sortType
     };
+    
+    // Aggiungi textQuery se c'è un testo di ricerca
+    if (searchText) {
+        requestBody.textQuery = searchText;
+    }
     
     if (cursor) {
         requestBody.cursor = cursor;
