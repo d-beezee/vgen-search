@@ -3,6 +3,18 @@ const CATEGORIES = {
     "Reference Sheet": "recSUfZT4cF56dTpN"
 }
 
+// Filtri speciali con variant keys
+const SPECIAL_FILTERS = {
+    "Semi-Realistic Illustration": {
+        searchCategoryVariantKeys: [
+            "rec2iZNMJUy3VOvam_recux6ZPhqFYEZO9R"
+        ],
+        searchCategoryIDs: [
+            "recmgzrPpwLaQYP0p"
+        ]
+    }
+}
+
 // Stato attuale della categoria selezionata
 let currentCategory = '';
 
@@ -31,6 +43,11 @@ function filterByCategory(categoryId) {
     
     event.target.classList.add('active');
     
+    // Rimuovi i filtri speciali quando cambio categoria
+    document.querySelectorAll('.special-filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
     // Aggiorna la serviceQuery
     if (categoryId === '') {
         // Tutte le categorie
@@ -45,6 +62,31 @@ function filterByCategory(categoryId) {
     }
     
     // Esegui la ricerca con la nuova categoria
+    handleSearch();
+}
+
+// Filtro per stile speciale (Semi-Realistic Illustration, etc.)
+function filterBySpecialStyle(filterName) {
+    if (!SPECIAL_FILTERS[filterName]) return;
+    
+    currentCategory = filterName;
+    
+    // Aggiorna l'UI dei bottoni
+    document.querySelectorAll('.special-filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    event.target.classList.add('active');
+    
+    // Rimuovi la selezione dalla categoria normale
+    document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Aggiorna la serviceQuery con il filtro speciale
+    serviceQuery = SPECIAL_FILTERS[filterName];
+    
+    // Esegui la ricerca
     handleSearch();
 }
 

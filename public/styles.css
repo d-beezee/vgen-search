@@ -193,6 +193,38 @@ header p {
     border-color: var(--primary-color);
 }
 
+/* Special Filter Buttons */
+.special-filter-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.special-filter-btn {
+    padding: 8px 16px;
+    background: var(--background);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.special-filter-btn:hover {
+    border-color: var(--secondary-color);
+    color: var(--secondary-color);
+}
+
+.special-filter-btn.active {
+    background: linear-gradient(135deg, var(--secondary-color), #ec4899);
+    color: white;
+    border-color: var(--secondary-color);
+}
+
 /* Buttons */
 .btn-primary,
 .btn-secondary {
