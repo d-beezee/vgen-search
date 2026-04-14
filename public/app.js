@@ -12,6 +12,12 @@ const SPECIAL_FILTERS = {
         searchCategoryIDs: [
             "recmgzrPpwLaQYP0p"
         ]
+    },
+    "Emotes": {
+        searchCategoryVariantKeys: [],
+        searchCategoryIDs: [
+            "recMFDqAqKkbCLUKb"
+        ]
     }
 }
 
