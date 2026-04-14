@@ -2,10 +2,96 @@ require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const path = require('path');
+const NodeCache = require('node-cache');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const API_URL = process.env.API_URL || 'https://api.vgen.co';
+
+// Cache per i tassi di cambio (valido per 24 ore)
+const exchangeRateCache = new NodeCache({ stdTTL: 86400, checkperiod: 3600 });
+
+/**
+ * Ottiene i tassi di cambio da USD/GBP/JPY a EUR
+ * Utilizza exchangerate-api.com (API gratuita)
+ */
+async function getExchangeRates() {
+  try {
+    // Controlla se i tassi sono già in cache
+    const cached = exchangeRateCache.get('exchange_rates');
+    if (cached) {
+      return cached;
+    }
+
+    // Recupera i tassi da un'API pubblica
+    const response = await axios.get('https://api.exchangerate-api.com/v4/latest/EUR', {
+      timeout: 5000
+    });
+
+    const rates = {
+      USD: response.data.rates.USD ? 1 / response.data.rates.USD : 1.1,
+      EUR: 1,
+      GBP: response.data.rates.GBP ? 1 / response.data.rates.GBP : 1.17,
+      JPY: response.data.rates.JPY ? 1 / response.data.rates.JPY : 0.0067
+    };
+
+    // Salva in cache
+    exchangeRateCache.set('exchange_rates', rates);
+    return rates;
+  } catch (error) {
+    console.warn('Errore nel recupero dei tassi di cambio, uso valori di fallback:', error.message);
+    // Tassi di fallback approssimativi
+    return {
+      USD: 0.92,
+      EUR: 1,
+      GBP: 1.17,
+      JPY: 0.0067
+    };
+  }
+}
+
+/**
+ * Converte un prezzo nella valuta specificata a EUR
+ */
+async function convertToEUR(price, currency = 'USD') {
+  if (!price || currency === 'EUR') {
+    return { priceEUR: price, originalPrice: price, originalCurrency: currency };
+  }
+
+  try {
+    const rates = await getExchangeRates();
+    const rate = rates[currency] || 1;
+    const priceEUR = Math.round(price * rate * 100) / 100;
+
+    return {
+      priceEUR,
+      originalPrice: price,
+      originalCurrency: currency
+    };
+  } catch (error) {
+    console.error('Errore nella conversione del prezzo:', error);
+    return { priceEUR: price, originalPrice: price, originalCurrency: currency };
+  }
+}
+
+/**
+ * Converte i prezzi di tutti i servizi a EUR
+ */
+async function convertServicesPrice(services) {
+  return Promise.all(
+    services.map(async (service) => {
+      const conversion = await convertToEUR(service.basePrice, service.currency);
+      return {
+        ...service,
+        basePrice: conversion.priceEUR,
+        currency: 'EUR',
+        originalPrice: conversion.originalPrice,
+        originalCurrency: conversion.originalCurrency,
+        priceDisplay: `€${conversion.priceEUR.toFixed(2)}`
+      };
+    })
+  );
+}
 
 // Middleware
 app.use(express.json());
@@ -72,8 +158,11 @@ app.post('/api/search', async (req, res) => {
     );
 
     // Estrai i risultati dalla risposta
-    const services = response.data.services || [];
+    let services = response.data.services || [];
     const nextCursor = response.data.nextCursor || null;
+
+    // Converti i prezzi a EUR
+    services = await convertServicesPrice(services);
 
     // Salva il cursor per la paginazione successiva
     currentCursor = nextCursor;
@@ -123,8 +212,11 @@ app.post('/api/search/more', async (req, res) => {
       }
     );
 
-    const services = response.data.services || [];
+    let services = response.data.services || [];
     const nextCursor = response.data.cursor || null;
+
+    // Converti i prezzi a EUR
+    services = await convertServicesPrice(services);
 
     currentCursor = nextCursor;
     searchResults = [...searchResults, ...services];
